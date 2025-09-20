@@ -21,7 +21,7 @@ export class CaixaDto {
 
   @ApiProperty({
     description: 'Lista de IDs dos produtos na caixa',
-    example: ['PS5', 'Volante'],
+    example: ['PS5'],
     type: [String],
   })
   @IsArray()
@@ -29,11 +29,11 @@ export class CaixaDto {
   @IsNotEmpty()
   produtos: string[];
 
-  @ApiProperty({
-    description: 'Observação sobre o empacotamento',
-    example: 'Produto não cabe em nenhuma caixa disponível.',
-    required: false,
-  })
+  // @ApiProperty({
+  //   description: 'Observação sobre o empacotamento',
+  //   example: 'Produto não cabe em nenhuma caixa disponível.',
+  //   required: false,
+  // })
   @IsString()
   @IsOptional()
   observacao?: string;

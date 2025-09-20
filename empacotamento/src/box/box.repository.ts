@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
 
+export interface Box {
+  box_id: string;
+  dimensoes: Dimensoes;
+}
+
+export interface Dimensoes {
+  altura: number;
+  largura: number;
+  comprimento: number;
+}
 @Injectable()
 export class BoxRepository {
-  getBoxes(): object[] {
+  getBoxes(): Box[] {
     return [
       {
         box_id: 'Caixa 1',

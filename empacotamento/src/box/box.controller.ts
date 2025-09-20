@@ -9,7 +9,7 @@ import { EmpacotamentoOutputDto } from './dto/empacotamento-output.dto';
 export class BoxController {
   constructor(private readonly boxService: BoxService) {}
 
-  @Post('empacotar')
+  @Post('pack')
   @ApiOperation({
     summary: 'Empacota pedidos em caixas otimizadas',
     description:
