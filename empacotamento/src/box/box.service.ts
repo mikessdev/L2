@@ -1,120 +1,74 @@
 import { Injectable } from '@nestjs/common';
-import { OrderDto, ProdutoDto } from './dto/order.dto';
-import { CaixaDto, OrderPackedDto } from './dto/order-packed.dto';
-import { Box, BoxRepository, Dimensoes } from './box.repository';
+import { OrderDto } from './dto/order.dto';
+import { OrderPackedDto } from './dto/order-packed.dto';
+import { BoxRepository } from './box.repository';
 
 @Injectable()
 export class BoxService {
   constructor(private readonly boxRepository: BoxRepository) {}
 
-  packOrders(orders: OrderDto[]): OrderPackedDto[] {
-    const packedOrders: OrderPackedDto[] = [];
+  embalarPedidos(orders: OrderDto[]): OrderPackedDto[] {
+    const caixas = this.boxRepository.getBoxes();
+    const orderPacked: OrderPackedDto[] = [];
 
     for (const { pedido_id, produtos } of orders) {
-      packedOrders.push({ pedido_id, caixas: this.boxAllocator(produtos) });
-    }
+      for (const caixa of caixas) {
+        const embalagem = this.embalarProduto(caixa, produtos);
 
-    return packedOrders;
-  }
+        orderPacked.push({
+          pedido_id,
+          ...embalagem,
+        });
 
-  private boxAllocator(produtos: ProdutoDto[]): CaixaDto[] {
-    const availableBoxes: Box[] = this.boxRepository.getBoxes();
-    const boxes: CaixaDto[] = [];
-
-    const productOrderedBySize = produtos.sort((a, b) => {
-      return this.calVolume(a.dimensoes) > this.calVolume(b.dimensoes) ? -1 : 1;
-    });
-
-    //for availableBoxes
-    // verificar se produto cabe na caixa
-    // se sim, colocar produto na caixa
-    // verificar se cabe outro produto na caixa
-    // se sim, colocar produto na caixa
-    // se não,
-    // se nao, pular para a proxima caixa
-
-    for (const product of productOrderedBySize) {
-      console.log('🚀 Processando produto: ', product.produto_id);
-
-      // colocar produto em uma caixa
-
-      // if (this.productIsBiggerThanAllAvailableBoxes(product.dimensoes)) {
-      //   boxes.push({
-      //     caixa_id: null,
-      //     produtos: [product.produto_id],
-      //     observacao: 'Produto não cabe em nenhuma caixa disponível.',
-      //   });
-      // }
-
-      for (const box of availableBoxes) {
-        const boxVolume = this.calVolume(box.dimensoes);
-        const productVolume = this.calVolume(product.dimensoes);
-        let availableSpaceInBox = box.dimensoes;
-
-        if (boxVolume < productVolume) {
-          boxes.push({
-            caixa_id: box.box_id,
-            produtos: [product.produto_id],
-            observacao: 'Produto não cabe em nenhuma caixa disponível.',
-          });
-          break;
-        }
-
-        if (boxVolume >= productVolume) {
-          boxes.push({
-            caixa_id: box.box_id,
-            produtos: [product.produto_id],
-          });
-          break;
-        }
+        break;
       }
     }
 
-    return boxes;
+    return orderPacked;
   }
 
-  private calVolume(dimensoes: Dimensoes): number {
-    return dimensoes.comprimento * dimensoes.largura * dimensoes.altura;
-  }
+  embalarProduto(caixa, produtos) {
+    // função ainda não preve rotação
+    let espacoLivreNaCaixa = {
+      z: caixa.dimensoes.comprimento,
+      y: caixa.dimensoes.altura,
+      x: caixa.dimensoes.largura,
+    };
 
-  private hasSpaceInBox(
-    boxDimensoes: Dimensoes,
-    productDimensoes: Dimensoes,
-  ): boolean {
-    const boxNumbers: number[] = [
-      boxDimensoes.comprimento,
-      boxDimensoes.largura,
-      boxDimensoes.altura,
-    ].sort((a, b) => b - a);
-    const productNumbers: number[] = [
-      productDimensoes.comprimento,
-      productDimensoes.largura,
-      productDimensoes.altura,
-    ].sort((a, b) => b - a);
+    const produtoAdicionado: string[] = [];
+    const produtosNaoAdicionados: string[] = [];
 
-    return boxNumbers[0] > productNumbers[0];
-  }
+    for (const produto of produtos) {
+      const cabeNaCaixa =
+        produto.dimensoes.largura <= espacoLivreNaCaixa.x &&
+        produto.dimensoes.altura <= espacoLivreNaCaixa.y &&
+        produto.dimensoes.comprimento <= espacoLivreNaCaixa.z;
 
-  private productIsBiggerThanAllAvailableBoxes(
-    productDimensoes: Dimensoes,
-  ): boolean {
-    const boxes: Box[] = this.boxRepository.getBoxes();
-    const allProductValues = [
-      productDimensoes.altura,
-      productDimensoes.largura,
-      productDimensoes.comprimento,
-    ];
-    const allBoxesValues = boxes.reduce((acc: number[], box) => {
-      acc.push(box.dimensoes.altura);
-      acc.push(box.dimensoes.largura);
-      acc.push(box.dimensoes.comprimento);
+      if (!cabeNaCaixa) {
+        produtosNaoAdicionados.push(produto.produto_id);
+        // console.log('produto: ' + produto.produto_id + ' não cabe na caixa');
+        break;
+      }
 
-      return acc;
-    }, [] as number[]);
+      produtoAdicionado.push(produto.produto_id);
 
-    const biggestBoxNumber = allBoxesValues.sort((a, b) => b - a)[0];
-    const biggestProductNumber = allProductValues.sort((a, b) => b - a)[0];
+      espacoLivreNaCaixa = {
+        z: caixa.dimensoes.comprimento - produto.dimensoes.comprimento,
+        y: caixa.dimensoes.altura - produto.dimensoes.altura,
+        x: caixa.dimensoes.largura - produto.dimensoes.largura,
+      };
 
-    return biggestProductNumber > biggestBoxNumber;
+      // console.log('produto: ' + produto.produto_id + ' adicionado na caixa');
+    }
+
+    if (produtoAdicionado.length) {
+      return {
+        caixas: [{ caixa_id: caixa.caixa_id, produtos: produtoAdicionado }],
+      };
+    }
+
+    return {
+      caixas: [{ caixa_id: null, produtos: produtosNaoAdicionados }],
+    };
   }
 }
