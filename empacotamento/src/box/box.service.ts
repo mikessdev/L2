@@ -8,18 +8,17 @@ export class BoxService {
   constructor(private readonly boxRepository: BoxRepository) {}
 
   embalarPedidos(orders: OrderDto[]): OrderPackedDto[] {
-    const caixas = this.boxRepository.getBoxes();
+    const caixasDisponiveis = this.boxRepository.getBoxes();
     const orderPacked: OrderPackedDto[] = [];
 
     for (const { pedido_id, produtos } of orders) {
-      for (const caixa of caixas) {
-        const embalagem = this.embalarProduto(caixa, produtos);
+      const embalagens: OrderPackedDto = {
+        pedido_id,
+        caixas: [],
+      };
 
-        orderPacked.push({
-          pedido_id,
-          ...embalagem,
-        });
-
+      for (const caixa of caixasDisponiveis) {
+        embalagens.caixas.push(this.embalarProduto(caixa, produtos));
         break;
       }
     }
@@ -62,13 +61,9 @@ export class BoxService {
     }
 
     if (produtoAdicionado.length) {
-      return {
-        caixas: [{ caixa_id: caixa.caixa_id, produtos: produtoAdicionado }],
-      };
+      return { caixa_id: caixa.caixa_id, produtos: produtoAdicionado };
     }
 
-    return {
-      caixas: [{ caixa_id: null, produtos: produtosNaoAdicionados }],
-    };
+    return { caixa_id: null, produtos: produtosNaoAdicionados };
   }
 }
