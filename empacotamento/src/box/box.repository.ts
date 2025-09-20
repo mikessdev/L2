@@ -5,7 +5,7 @@ export class BoxRepository {
   getBoxes(): object[] {
     return [
       {
-        box_id: '1',
+        box_id: 'Caixa 1',
         dimensoes: {
           altura: 30,
           largura: 40,
@@ -13,7 +13,7 @@ export class BoxRepository {
         },
       },
       {
-        box_id: '2',
+        box_id: 'Caixa 2',
         dimensoes: {
           altura: 50,
           largura: 50,
@@ -21,7 +21,7 @@ export class BoxRepository {
         },
       },
       {
-        box_id: '3',
+        box_id: 'Caixa 3',
         dimensoes: {
           altura: 50,
           largura: 80,
