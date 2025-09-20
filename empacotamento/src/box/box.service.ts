@@ -17,17 +17,25 @@ export class BoxService {
         caixas: [],
       };
 
+      const disposicaoDeProdutosPorCaixas: any[] = [];
       for (const caixa of caixasDisponiveis) {
-        embalagens.caixas.push(this.embalarProduto(caixa, produtos));
-        break;
+        disposicaoDeProdutosPorCaixas.push(
+          this.embalarProduto(caixa, produtos),
+        );
+        // embalagens.caixas.push(this.embalarProduto(caixa, produtos));
+        // break;
       }
+
+      console.log(disposicaoDeProdutosPorCaixas);
+
+      orderPacked.push(embalagens);
     }
 
     return orderPacked;
   }
 
   embalarProduto(caixa, produtos) {
-    // função ainda não preve rotação
+    // função ainda não preve rotação de produtos
     let espacoLivreNaCaixa = {
       z: caixa.dimensoes.comprimento,
       y: caixa.dimensoes.altura,
@@ -46,7 +54,7 @@ export class BoxService {
       if (!cabeNaCaixa) {
         produtosNaoAdicionados.push(produto.produto_id);
         // console.log('produto: ' + produto.produto_id + ' não cabe na caixa');
-        break;
+        continue;
       }
 
       produtoAdicionado.push(produto.produto_id);
@@ -64,6 +72,10 @@ export class BoxService {
       return { caixa_id: caixa.caixa_id, produtos: produtoAdicionado };
     }
 
-    return { caixa_id: null, produtos: produtosNaoAdicionados };
+    return {
+      caixa_id: null,
+      produtos: produtosNaoAdicionados,
+      observacao: 'Produto não cabe em nenhuma caixa disponível.',
+    };
   }
 }
