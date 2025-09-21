@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { OrderDto } from './dto/order.dto';
 import { OrderPackedDto } from './dto/order-packed.dto';
 import { BoxRepository } from './box.repository';
-import {
-  BinPackingService,
-  BP3DBin,
-} from 'src/bin-packing/bin-packing.service';
-import { setDefaultResultOrder } from 'dns';
+import { BinPackingService } from 'src/bin-packing/bin-packing.service';
 
 @Injectable()
 export class BoxService {
@@ -56,18 +52,18 @@ export class BoxService {
   }
 
   private formatPackingResult() {
-    const results = this.binPackingService.getResult().map((bin) => ({
-      caixa_id: bin.name,
-      produtos: bin.items.map((item) => item.name),
-    }));
+    return this.binPackingService.getResult().map((item) => {
+      const fit = {
+        caixa_id: item.container_id,
+        produtos: item.items,
+      };
 
-    return results.map((result) => {
-      return result.produtos.length > 0
-        ? result
-        : {
-            ...result,
-            observacao: 'Produto não cabe em nenhuma caixa disponível.',
-          };
+      const unfit = {
+        ...fit,
+        observacao: 'Produto não cabe em nenhuma caixa disponível.',
+      };
+
+      return item.container_id ? fit : unfit;
     });
   }
 }

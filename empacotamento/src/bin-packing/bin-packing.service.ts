@@ -60,6 +60,25 @@ export class BinPackingService {
   }
 
   getResult(): BP3DBin[] {
-    return this.packer.bins.filter((bin) => bin.items.length > 0);
+    const fit = this.packer.bins.filter((bin) => bin.items.length > 0);
+    const unfit = this.packer.unfitItems;
+
+    const result = [
+      ...fit.map((container) => {
+        return {
+          container_id: container.name,
+          items: container.items.map((item) => item.name),
+        };
+      }),
+    ];
+
+    if (unfit.length > 0) {
+      result.push({
+        container_id: null,
+        items: unfit.map((item) => item.name),
+      });
+    }
+
+    return result;
   }
 }
