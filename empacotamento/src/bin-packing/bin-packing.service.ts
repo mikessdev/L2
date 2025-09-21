@@ -17,7 +17,7 @@ export type BP3DPacker = InstanceType<typeof BP3D.BP3D.Packer>;
 export class BinPackingService {
   private readonly bp3d = BP3D.BP3D;
   private packer: BP3DPacker;
-  private readonly scale = 100000;
+  private readonly scale = 100_000; // A biblioteca usa valores muito grandes; dividindo por 100_000 convertemos para centímetros
 
   constructor() {
     this.reset();
@@ -43,7 +43,7 @@ export class BinPackingService {
       box.largura / this.scale,
       box.altura / this.scale,
       box.comprimento / this.scale,
-      Infinity,
+      box.peso ?? Infinity,
     );
   }
 
