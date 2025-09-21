@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { OrderDto } from './dto/order.dto';
 import { OrderPackedDto } from './dto/order-packed.dto';
 import { BoxRepository } from './box.repository';
+import * as BP3D from 'binpackingjs';
+
+const { Item, Bin, Packer } = BP3D.BP3D;
+const scale = 100000;
 
 @Injectable()
 export class BoxService {
@@ -9,73 +13,51 @@ export class BoxService {
 
   embalarPedidos(orders: OrderDto[]): OrderPackedDto[] {
     const caixasDisponiveis = this.boxRepository.getBoxes();
+    const caixasAposEmbalagem: any = [];
     const orderPacked: OrderPackedDto[] = [];
 
     for (const { pedido_id, produtos } of orders) {
-      const embalagens: OrderPackedDto = {
-        pedido_id,
-        caixas: [],
-      };
+      const caixasUsadas: any = [];
+      const embalagem = new Packer();
 
-      const disposicaoDeProdutosPorCaixas: any[] = [];
-      for (const caixa of caixasDisponiveis) {
-        disposicaoDeProdutosPorCaixas.push(
-          this.embalarProduto(caixa, produtos),
+      caixasDisponiveis.forEach(({ caixa_id, dimensoes }) => {
+        const bin = new Bin(
+          caixa_id,
+          dimensoes.largura / scale,
+          dimensoes.altura / scale,
+          dimensoes.comprimento / scale,
+          Infinity,
         );
-        // embalagens.caixas.push(this.embalarProduto(caixa, produtos));
-        // break;
-      }
 
-      console.log(disposicaoDeProdutosPorCaixas);
+        caixasUsadas.push(bin);
+        embalagem.addBin(bin);
+      });
 
-      orderPacked.push(embalagens);
+      produtos.forEach(({ produto_id, dimensoes }) => {
+        embalagem.addItem(
+          new Item(
+            produto_id,
+            dimensoes.largura / scale,
+            dimensoes.altura / scale,
+            dimensoes.comprimento / scale,
+            0,
+          ),
+        );
+      });
+
+      embalagem.pack();
+      console.log(embalagem);
+      caixasAposEmbalagem.push({
+        pedido_id,
+        ...caixasUsadas.filter((bin) => bin.items.length),
+      });
     }
 
+    // caixasAposEmbalagem.forEach((bin) => {
+    //   console.log('pedido_id: ', bin.pedido_id);
+    //   console.log(bin['0']?.name);
+    //   console.log(bin['0']?.items);
+    // });
     return orderPacked;
-  }
-
-  embalarProduto(caixa, produtos) {
-    // função ainda não preve rotação de produtos
-    let espacoLivreNaCaixa = {
-      z: caixa.dimensoes.comprimento,
-      y: caixa.dimensoes.altura,
-      x: caixa.dimensoes.largura,
-    };
-
-    const produtoAdicionado: string[] = [];
-    const produtosNaoAdicionados: string[] = [];
-
-    for (const produto of produtos) {
-      const cabeNaCaixa =
-        produto.dimensoes.largura <= espacoLivreNaCaixa.x &&
-        produto.dimensoes.altura <= espacoLivreNaCaixa.y &&
-        produto.dimensoes.comprimento <= espacoLivreNaCaixa.z;
-
-      if (!cabeNaCaixa) {
-        produtosNaoAdicionados.push(produto.produto_id);
-        // console.log('produto: ' + produto.produto_id + ' não cabe na caixa');
-        continue;
-      }
-
-      produtoAdicionado.push(produto.produto_id);
-
-      espacoLivreNaCaixa = {
-        z: caixa.dimensoes.comprimento - produto.dimensoes.comprimento,
-        y: caixa.dimensoes.altura - produto.dimensoes.altura,
-        x: caixa.dimensoes.largura - produto.dimensoes.largura,
-      };
-
-      // console.log('produto: ' + produto.produto_id + ' adicionado na caixa');
-    }
-
-    if (produtoAdicionado.length) {
-      return { caixa_id: caixa.caixa_id, produtos: produtoAdicionado };
-    }
-
-    return {
-      caixa_id: null,
-      produtos: produtosNaoAdicionados,
-      observacao: 'Produto não cabe em nenhuma caixa disponível.',
-    };
   }
 }
