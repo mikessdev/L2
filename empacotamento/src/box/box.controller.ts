@@ -25,7 +25,7 @@ export class BoxController {
     description: 'Dados de entrada inválidos',
   })
   packOrders(@Body() input: EmpacotamentoInputDto): EmpacotamentoOutputDto {
-    const pedidosEmpacotados = this.boxService.embalarPedidos(input.pedidos);
+    const pedidosEmpacotados = this.boxService.packOrders(input.pedidos);
     return { pedidos: pedidosEmpacotados };
   }
 }
